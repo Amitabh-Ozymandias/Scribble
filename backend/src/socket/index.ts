@@ -120,6 +120,13 @@ export function initializeSocket(server: HttpServer) {
 
         socket.to(room.id).emit("draw", stroke);
     });
+    socket.on("clear-canvas", () => {
+        const room = getRoomByPlayer(socket.id);
+
+        if (!room) return;
+
+        io.to(room.id).emit("clear-canvas");
+    });
 
     // ==========================
     // DISCONNECT

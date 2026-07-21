@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
 import type { Stroke } from "../types/stroke";
+import Toolbar from "./Toolbar";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,6 +12,9 @@ export default function Canvas() {
     x: 0,
     y: 0,
   });
+
+  const [color, setColor] = useState("#000000");
+  const [brushSize, setBrushSize] = useState(4);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,8 +30,6 @@ export default function Canvas() {
 
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 4;
   }, []);
 
   useEffect(() => {
@@ -48,10 +50,24 @@ export default function Canvas() {
       ctx.stroke();
     }
 
+    function clearCanvasLocal() {
+      const canvas = canvasRef.current;
+
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
     socket.on("draw", handleRemoteDraw);
+    socket.on("clear-canvas", clearCanvasLocal);
 
     return () => {
       socket.off("draw", handleRemoteDraw);
+      socket.off("clear-canvas", clearCanvasLocal);
     };
   }, []);
 
@@ -91,26 +107,25 @@ export default function Canvas() {
 
     const current = getPosition(e);
 
-    // Draw locally
+    ctx.strokeStyle = color;
+    ctx.lineWidth = brushSize;
+
     ctx.beginPath();
     ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
     ctx.lineTo(current.x, current.y);
     ctx.stroke();
 
-    // Create stroke packet
     const stroke: Stroke = {
       x0: lastPoint.current.x,
       y0: lastPoint.current.y,
       x1: current.x,
       y1: current.y,
-      color: "#000",
-      width: 4,
+      color,
+      width: brushSize,
     };
 
-    // Send to backend
     socket.emit("draw", stroke);
 
-    // Update previous point
     lastPoint.current = current;
   }
 
@@ -118,18 +133,32 @@ export default function Canvas() {
     isDrawing.current = false;
   }
 
+  function clearCanvas() {
+    socket.emit("clear-canvas");
+  }
+
   return (
-    <canvas
-      ref={canvasRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={stopDrawing}
-      onPointerLeave={stopDrawing}
-      style={{
-        border: "2px solid black",
-        background: "white",
-        cursor: "crosshair",
-      }}
-    />
+    <>
+      <Toolbar
+        color={color}
+        setColor={setColor}
+        brushSize={brushSize}
+        setBrushSize={setBrushSize}
+        clearCanvas={clearCanvas}
+      />
+
+      <canvas
+        ref={canvasRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopDrawing}
+        onPointerLeave={stopDrawing}
+        style={{
+          border: "2px solid black",
+          background: "white",
+          cursor: "crosshair",
+        }}
+      />
+    </>
   );
 }
