@@ -5,21 +5,28 @@ function App() {
   const [socketId, setSocketId] = useState("");
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Connected!");
+  socket.on("connect", () => {
+    console.log("Connected");
 
-      setSocketId(socket.id!);
-    });
+    setSocketId(socket.id!);
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected");
-    });
+    socket.emit("create-room", "Amit");
+  });
 
-    return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, []);
+  socket.on("room-created", (room) => {
+    console.log("Room Created:", room);
+  });
+
+  socket.on("room-updated", (room) => {
+    console.log("Room Updated:", room);
+  });
+
+  return () => {
+    socket.off("connect");
+    socket.off("room-created");
+    socket.off("room-updated");
+  };
+}, []);
 
   return (
     <div
