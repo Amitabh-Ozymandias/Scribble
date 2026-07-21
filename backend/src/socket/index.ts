@@ -5,6 +5,8 @@ import {
   createRoom,
   addPlayer,
   roomExists,
+  removePlayer,
+  getRoomByPlayer,
 } from "../rooms/roomManager";
 
 import { generateRoomId } from "../utils/generateRoomId";
@@ -19,6 +21,9 @@ export function initializeSocket(server: HttpServer) {
   io.on("connection", (socket) => {
     console.log(`${socket.id} connected`);
 
+    // ==========================
+    // CREATE ROOM
+    // ==========================
     socket.on("create-room", (playerName: string) => {
       const roomId = generateRoomId();
 
@@ -32,6 +37,9 @@ export function initializeSocket(server: HttpServer) {
       socket.emit("room-created", room);
     });
 
+    // ==========================
+    // JOIN ROOM
+    // ==========================
     socket.on(
       "join-room",
       ({
@@ -62,7 +70,45 @@ export function initializeSocket(server: HttpServer) {
       }
     );
 
+    // ==========================
+    // LEAVE ROOM
+    // ==========================
+    socket.on("leave-room", () => {
+      const room = getRoomByPlayer(socket.id);
+
+      if (!room) return;
+
+      const roomId = room.id;
+
+      socket.leave(roomId);
+
+      const updatedRoom = removePlayer(socket.id);
+
+      if (updatedRoom) {
+        io.to(roomId).emit("room-updated", updatedRoom);
+      }
+
+      console.log(`${socket.id} left room ${roomId}`);
+    });
+
+    // ==========================
+    // DISCONNECT
+    // ==========================
     socket.on("disconnect", () => {
+      const room = getRoomByPlayer(socket.id);
+
+      if (room) {
+        const roomId = room.id;
+
+        const updatedRoom = removePlayer(socket.id);
+
+        if (updatedRoom) {
+          io.to(roomId).emit("room-updated", updatedRoom);
+        }
+
+        console.log(`${socket.id} removed from room ${roomId}`);
+      }
+
       console.log(`${socket.id} disconnected`);
     });
   });
