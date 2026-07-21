@@ -7,6 +7,7 @@ export type Room = {
   id: string;
   hostId: string;
   players: Player[];
+  drawerId: string | null;
 };
 
 const rooms = new Map<string, Room>();
@@ -16,6 +17,7 @@ export function createRoom(roomId: string, player: Player): Room {
     id: roomId,
     hostId: player.id,
     players: [player],
+    drawerId: null,
   };
 
   rooms.set(roomId, room);
@@ -99,4 +101,15 @@ export function getRoomByPlayer(socketId: string): Room | null {
 
 export function getRooms() {
   return rooms;
+}
+
+export function setDrawer(
+    roomId: string,
+    drawerId: string
+) {
+    const room = rooms.get(roomId);
+
+    if (!room) return;
+
+    room.drawerId = drawerId;
 }

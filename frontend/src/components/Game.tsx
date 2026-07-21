@@ -62,7 +62,7 @@ export default function Game({ room }: Props) {
           fontSize: "24px",
         }}
       >
-        <Canvas />
+        <Canvas room={room} />
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ export type RoomType = {
   id: string;
   hostId: string;
   players: Player[];
+  drawerId: string | null;
 };
 
 function App() {

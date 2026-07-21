@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
 import type { Stroke } from "../types/stroke";
+import type { RoomType } from "../App";
 import Toolbar from "./Toolbar";
 
-export default function Canvas() {
+type CanvasProps = {
+  room: RoomType;
+};
+
+export default function Canvas({ room }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const isDrawing = useRef(false);
@@ -15,6 +20,7 @@ export default function Canvas() {
 
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
+  const canDraw = socket.id === room.drawerId;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,6 +91,7 @@ export default function Canvas() {
   function handlePointerDown(
     e: React.PointerEvent<HTMLCanvasElement>
   ) {
+    if (!canDraw) return;
     const pos = getPosition(e);
 
     isDrawing.current = true;
@@ -139,13 +146,15 @@ export default function Canvas() {
 
   return (
     <>
-      <Toolbar
-        color={color}
-        setColor={setColor}
-        brushSize={brushSize}
-        setBrushSize={setBrushSize}
-        clearCanvas={clearCanvas}
-      />
+      {canDraw && (
+        <Toolbar
+            color={color}
+            setColor={setColor}
+            brushSize={brushSize}
+            setBrushSize={setBrushSize}
+            clearCanvas={clearCanvas}
+        />
+    )}
 
       <canvas
         ref={canvasRef}
@@ -156,7 +165,7 @@ export default function Canvas() {
         style={{
           border: "2px solid black",
           background: "white",
-          cursor: "crosshair",
+          cursor: canDraw ? "crosshair" : "not-allowed",
         }}
       />
     </>

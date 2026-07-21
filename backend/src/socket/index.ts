@@ -109,6 +109,7 @@ export function initializeSocket(server: HttpServer) {
       }
 
       console.log(`Game started in room ${room.id}`);
+      room.drawerId = room.players[0].id;
 
       io.to(room.id).emit("game-started", room);
     });
