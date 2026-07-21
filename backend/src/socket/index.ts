@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
+import { Stroke } from "../types/stroke";
 
 import {
   createRoom,
@@ -110,6 +111,14 @@ export function initializeSocket(server: HttpServer) {
       console.log(`Game started in room ${room.id}`);
 
       io.to(room.id).emit("game-started", room);
+    });
+
+    socket.on("draw", (stroke: Stroke) => {
+        const room = getRoomByPlayer(socket.id);
+
+        if (!room) return;
+
+        socket.to(room.id).emit("draw", stroke);
     });
 
     // ==========================

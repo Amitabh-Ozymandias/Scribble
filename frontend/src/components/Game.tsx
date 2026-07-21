@@ -1,5 +1,6 @@
 import type { RoomType } from "../App";
 import { socket } from "../socket";
+import Canvas from "./Canvas";
 
 type Props = {
   room: RoomType;
@@ -61,7 +62,7 @@ export default function Game({ room }: Props) {
           fontSize: "24px",
         }}
       >
-        Canvas Coming Soon...
+        <Canvas />
       </div>
     </div>
   );
