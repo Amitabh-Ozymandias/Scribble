@@ -7,7 +7,12 @@ export type Room = {
   id: string;
   hostId: string;
   players: Player[];
+
   drawerId: string | null;
+  currentRound: number;
+  maxRounds: number;
+  currentWord: string | null;
+  gameStarted: boolean;
 };
 
 const rooms = new Map<string, Room>();
@@ -17,7 +22,12 @@ export function createRoom(roomId: string, player: Player): Room {
     id: roomId,
     hostId: player.id,
     players: [player],
+
     drawerId: null,
+    currentRound: 0,
+    maxRounds: 3,
+    currentWord: null,
+    gameStarted: false,
   };
 
   rooms.set(roomId, room);
@@ -48,9 +58,6 @@ export function addPlayer(roomId: string, player: Player): Room | null {
 
   room.players.push(player);
 
-  console.log("Player joined:", player.name);
-  console.log("Current room:", room);
-
   return room;
 }
 
@@ -62,29 +69,24 @@ export function removePlayer(socketId: string): Room | null {
 
     if (index === -1) continue;
 
-    console.log("Removing player:", room.players[index]);
-
     room.players.splice(index, 1);
 
-    // Room empty -> delete it
     if (room.players.length === 0) {
-      console.log(`Deleting empty room ${roomId}`);
       rooms.delete(roomId);
       return null;
     }
 
-    // Host left -> assign first remaining player
     if (room.hostId === socketId) {
       room.hostId = room.players[0].id;
-      console.log("Host transferred to:", room.hostId);
     }
 
-    console.log("Updated room:", room);
+    // If the drawer left, assign the first remaining player.
+    if (room.drawerId === socketId) {
+      room.drawerId = room.players[0].id;
+    }
 
     return room;
   }
-
-  console.log("Player not found in any room:", socketId);
 
   return null;
 }
@@ -103,13 +105,25 @@ export function getRooms() {
   return rooms;
 }
 
-export function setDrawer(
-    roomId: string,
-    drawerId: string
-) {
-    const room = rooms.get(roomId);
+export function setDrawer(roomId: string, drawerId: string) {
+  const room = rooms.get(roomId);
 
-    if (!room) return;
+  if (!room) return;
 
-    room.drawerId = drawerId;
+  room.drawerId = drawerId;
+}
+
+export function nextDrawer(roomId: string) {
+  const room = rooms.get(roomId);
+
+  if (!room) return;
+
+  const currentIndex = room.players.findIndex(
+    (player) => player.id === room.drawerId
+  );
+
+  const nextIndex =
+    (currentIndex + 1) % room.players.length;
+
+  room.drawerId = room.players[nextIndex].id;
 }
