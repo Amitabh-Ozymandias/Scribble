@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Lobby from "./components/Lobby.tsx";
 import Room from "./components/Room.tsx";
+import Game from "./components/Game.tsx";
 import { socket } from "./socket";
 
 export type Player = {
@@ -16,6 +17,7 @@ export type RoomType = {
 
 function App() {
   const [room, setRoom] = useState<RoomType | null>(null);
+  const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -23,13 +25,23 @@ function App() {
     });
 
     socket.on("room-created", (room: RoomType) => {
-      console.log("Room Created:", room);
       setRoom(room);
     });
 
     socket.on("room-updated", (room: RoomType) => {
-      console.log("Room Updated:", room);
       setRoom(room);
+    });
+
+    socket.on("left-room", () => {
+      setRoom(null);
+      setGameStarted(false);
+    });
+
+    socket.on("game-started", (room: RoomType) => {
+      console.log("Game Started!", room);
+
+      setRoom(room);
+      setGameStarted(true);
     });
 
     socket.on("room-error", (message: string) => {
@@ -40,19 +52,21 @@ function App() {
       socket.off("connect");
       socket.off("room-created");
       socket.off("room-updated");
+      socket.off("left-room");
+      socket.off("game-started");
       socket.off("room-error");
     };
   }, []);
 
-  return (
-    <>
-      {room ? (
-        <Room room={room} />
-      ) : (
-        <Lobby />
-      )}
-    </>
-  );
+  if (!room) {
+    return <Lobby />;
+  }
+
+  if (gameStarted) {
+    return <Game room={room} />;
+  }
+
+  return <Room room={room} />;
 }
 
 export default App;

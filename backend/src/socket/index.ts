@@ -84,11 +84,32 @@ export function initializeSocket(server: HttpServer) {
 
       const updatedRoom = removePlayer(socket.id);
 
+      socket.emit("left-room");
+
       if (updatedRoom) {
         io.to(roomId).emit("room-updated", updatedRoom);
       }
+    });
 
-      console.log(`${socket.id} left room ${roomId}`);
+    // ==========================
+    // START GAME
+    // ==========================
+    socket.on("start-game", () => {
+      const room = getRoomByPlayer(socket.id);
+
+      if (!room) {
+        socket.emit("room-error", "You are not in a room.");
+        return;
+      }
+
+      if (room.hostId !== socket.id) {
+        socket.emit("room-error", "Only the host can start the game.");
+        return;
+      }
+
+      console.log(`Game started in room ${room.id}`);
+
+      io.to(room.id).emit("game-started", room);
     });
 
     // ==========================
