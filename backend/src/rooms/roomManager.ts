@@ -35,6 +35,14 @@ export function addPlayer(
 
   if (!room) return null;
 
+  const alreadyJoined = room.players.some(
+    (p) => p.id === player.id
+  );
+
+  if (alreadyJoined) {
+    return null;
+  }
+
   room.players.push(player);
 
   return room;

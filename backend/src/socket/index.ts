@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
-import http from "http";
+import { Server as HttpServer } from "http";
+
 import {
   createRoom,
   addPlayer,
@@ -8,77 +9,61 @@ import {
 
 import { generateRoomId } from "../utils/generateRoomId";
 
-export function initializeSocket(server: http.Server) {
+export function initializeSocket(server: HttpServer) {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
-      methods: ["GET", "POST"],
+      origin: "*",
     },
   });
 
   io.on("connection", (socket) => {
-  console.log(`🟢 ${socket.id} connected`);
+    console.log(`${socket.id} connected`);
 
-  // -------------------------
-  // CREATE ROOM
-  // -------------------------
+    socket.on("create-room", (playerName: string) => {
+      const roomId = generateRoomId();
 
-  socket.on("create-room", (playerName: string) => {
-    const roomId = generateRoomId();
-
-    const room = createRoom(roomId, {
-      id: socket.id,
-      name: playerName,
-    });
-
-    socket.join(roomId);
-
-    socket.emit("room-created", room);
-
-    console.log(room);
-  });
-
-  // -------------------------
-  // JOIN ROOM
-  // -------------------------
-
-  socket.on(
-    "join-room",
-    ({
-      roomId,
-      playerName,
-    }: {
-      roomId: string;
-      playerName: string;
-    }) => {
-      if (!roomExists(roomId)) {
-        socket.emit("error", "Room does not exist");
-        return;
-      }
-
-      const room = addPlayer(roomId, {
+      const room = createRoom(roomId, {
         id: socket.id,
         name: playerName,
       });
 
-      if (!room) return;
-
       socket.join(roomId);
 
-      io.to(roomId).emit("room-updated", room);
+      socket.emit("room-created", room);
+    });
 
-      console.log(room);
-    }
-  );
+    socket.on(
+      "join-room",
+      ({
+        roomId,
+        playerName,
+      }: {
+        roomId: string;
+        playerName: string;
+      }) => {
+        if (!roomExists(roomId)) {
+          socket.emit("room-error", "Room does not exist");
+          return;
+        }
 
-  // -------------------------
-  // DISCONNECT
-  // -------------------------
+        const room = addPlayer(roomId, {
+          id: socket.id,
+          name: playerName,
+        });
 
-  socket.on("disconnect", () => {
-    console.log(`🔴 ${socket.id} disconnected`);
+        if (!room) {
+          socket.emit("room-error", "Already in room");
+          return;
+        }
+
+        socket.join(roomId);
+
+        io.to(roomId).emit("room-updated", room);
+      }
+    );
+
+    socket.on("disconnect", () => {
+      console.log(`${socket.id} disconnected`);
+    });
   });
-});
-
-  return io;
 }

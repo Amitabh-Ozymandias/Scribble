@@ -1,48 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { socket } from "./socket";
+import Lobby from "./components/Lobby.tsx";
 
 function App() {
-  const [socketId, setSocketId] = useState("");
-
   useEffect(() => {
-  socket.on("connect", () => {
-    console.log("Connected");
+    socket.on("connect", () => {
+      console.log("✅ Connected:", socket.id);
+    });
 
-    setSocketId(socket.id!);
+    socket.on("room-created", (room) => {
+      console.log("Room Created:", room);
+    });
 
-    socket.emit("create-room", "Amit");
-  });
+    socket.on("room-updated", (room) => {
+      console.log("Room Updated:", room);
+    });
 
-  socket.on("room-created", (room) => {
-    console.log("Room Created:", room);
-  });
+    socket.on("room-error", (message) => {
+      console.error(message);
+    });
 
-  socket.on("room-updated", (room) => {
-    console.log("Room Updated:", room);
-  });
+    return () => {
+      socket.off("connect");
+      socket.off("room-created");
+      socket.off("room-updated");
+      socket.off("room-error");
+    };
+  }, []);
 
-  return () => {
-    socket.off("connect");
-    socket.off("room-created");
-    socket.off("room-updated");
-  };
-}, []);
-
-  return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "28px",
-      }}
-    >
-      Socket ID:
-      <br />
-      {socketId}
-    </div>
-  );
+  return <Lobby />;
 }
 
 export default App;
