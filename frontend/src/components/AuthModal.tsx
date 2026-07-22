@@ -7,7 +7,7 @@ type Props = {
   onAuthSuccess: (user: AuthUser) => void;
 };
 
-const BACKEND_URL = "http://localhost:3000";
+const BACKEND_URL = "https://scribble-ss8e.onrender.com";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }: Props) {
   const [step, setStep] = useState<"request" | "verify">("request");
