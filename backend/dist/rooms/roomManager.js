@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MAX_PLAYERS = void 0;
 exports.createRoom = createRoom;
 exports.getRoom = getRoom;
 exports.getRooms = getRooms;
 exports.roomExists = roomExists;
+exports.isRoomFull = isRoomFull;
 exports.addPlayer = addPlayer;
 exports.removePlayer = removePlayer;
 exports.getRoomByPlayer = getRoomByPlayer;
@@ -63,12 +65,19 @@ function getRooms() {
 function roomExists(roomId) {
     return rooms.has(roomId);
 }
+exports.MAX_PLAYERS = 7;
+function isRoomFull(roomId) {
+    const room = rooms.get(roomId);
+    return room ? room.players.length >= exports.MAX_PLAYERS : false;
+}
 // ==========================
 // PLAYER MANAGEMENT
 // ==========================
 function addPlayer(roomId, player) {
     const room = rooms.get(roomId);
     if (!room)
+        return null;
+    if (room.players.length >= exports.MAX_PLAYERS)
         return null;
     const alreadyJoined = room.players.some((p) => p.id === player.id);
     if (alreadyJoined)

@@ -105,6 +105,10 @@ function initializeSocket(server) {
                 socket.emit("room-error", "Room does not exist");
                 return;
             }
+            if ((0, roomManager_1.isRoomFull)(roomId)) {
+                socket.emit("room-error", "Room is full (max 7 players allowed).");
+                return;
+            }
             const room = (0, roomManager_1.addPlayer)(roomId, {
                 id: socket.id,
                 name: playerName,
