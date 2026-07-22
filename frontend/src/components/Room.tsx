@@ -1,75 +1,84 @@
+import { useState } from "react";
 import { socket } from "../socket";
-import type { RoomType } from "../App";
+import type { RoomType } from "../types";
 
 type Props = {
   room: RoomType;
 };
 
 export default function Room({ room }: Props) {
+  const [copied, setCopied] = useState(false);
   const isHost = socket.id === room.hostId;
 
   const leaveRoom = () => {
     socket.emit("leave-room");
-    window.location.reload();
   };
 
   const startGame = () => {
     socket.emit("start-game");
   };
 
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(room.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "50px auto",
-        padding: "24px",
-        border: "1px solid #ccc",
-        borderRadius: "10px",
-      }}
-    >
-      <h1>Scribble</h1>
+    <div className="room-container">
+      <div className="room-card">
+        <h1 className="room-title">🎨 Scribble Lobby</h1>
 
-      <h2>Room Code</h2>
-      <h3>{room.id}</h3>
-
-      <hr />
-
-      <h2>Players ({room.players.length})</h2>
-
-      {room.players.map((player) => (
-        <div
-          key={player.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "10px 0",
-            borderBottom: "1px solid #ddd",
-          }}
-        >
-          <span>{player.name}</span>
-
-          <span>
-            {player.id === room.hostId ? "👑 Host" : "👤 Player"}
-          </span>
+        <div className="room-code-section">
+          <span className="code-label">Room Code:</span>
+          <div className="code-box">
+            <span className="code-text">{room.id}</span>
+            <button onClick={copyRoomCode} className="copy-btn">
+              {copied ? "✓ Copied!" : "📋 Copy"}
+            </button>
+          </div>
         </div>
-      ))}
 
-      <div
-        style={{
-          marginTop: "30px",
-          display: "flex",
-          gap: "10px",
-        }}
-      >
-        <button onClick={leaveRoom}>
-          Leave Room
-        </button>
+        <div className="room-players-section">
+          <h3>Players Joined ({room.players.length})</h3>
 
-        {isHost && (
-          <button onClick={startGame}>
-            Start Game
+          <div className="lobby-players-grid">
+            {room.players.map((player) => (
+              <div key={player.id} className="lobby-player-card">
+                <div className="player-avatar">👤</div>
+                <div className="player-details">
+                  <span className="player-name">{player.name}</span>
+                  {player.id === room.hostId && (
+                    <span className="host-tag">👑 Host</span>
+                  )}
+                  {player.id === socket.id && (
+                    <span className="you-tag">⭐ You</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="room-actions">
+          <button onClick={leaveRoom} className="btn-secondary">
+            Leave Room
           </button>
-        )}
+
+          {isHost ? (
+            <button
+              onClick={startGame}
+              className="btn-primary start-game-btn"
+              disabled={room.players.length < 1}
+            >
+              🚀 Start Game
+            </button>
+          ) : (
+            <div className="waiting-host-msg">
+              Waiting for the host to start the game...
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

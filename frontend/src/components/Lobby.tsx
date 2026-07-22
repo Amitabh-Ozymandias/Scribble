@@ -6,51 +6,61 @@ export default function Lobby() {
   const [roomId, setRoomId] = useState("");
 
   const createRoom = () => {
-    if (!name.trim()) return;
-
-    socket.emit("create-room", name);
+    if (!name.trim()) return alert("Please enter your name!");
+    socket.emit("create-room", name.trim());
   };
 
   const joinRoom = () => {
-    if (!name.trim() || !roomId.trim()) return;
+    if (!name.trim()) return alert("Please enter your name!");
+    if (!roomId.trim()) return alert("Please enter a room code!");
 
     socket.emit("join-room", {
-      roomId: roomId.toUpperCase(),
-      playerName: name,
+      roomId: roomId.trim().toUpperCase(),
+      playerName: name.trim(),
     });
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        width: "300px",
-        margin: "100px auto",
-      }}
-    >
-      <h1>Scribble</h1>
+    <div className="lobby-container">
+      <div className="lobby-card">
+        <h1 className="lobby-hero-title">🎨 Scribble</h1>
+        <p className="lobby-subtitle">Draw, guess, and compete with friends!</p>
 
-      <input
-        placeholder="Your Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+        <div className="form-group">
+          <label htmlFor="name-input">Your Display Name</label>
+          <input
+            id="name-input"
+            placeholder="Enter your name..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="lobby-input"
+          />
+        </div>
 
-      <button onClick={createRoom}>
-        Create Room
-      </button>
+        <div className="lobby-divider">
+          <span>Option 1: Host a Game</span>
+        </div>
 
-      <input
-        placeholder="Room Code"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-      />
+        <button onClick={createRoom} className="btn-primary full-width">
+          ✨ Create New Room
+        </button>
 
-      <button onClick={joinRoom}>
-        Join Room
-      </button>
+        <div className="lobby-divider">
+          <span>Option 2: Join Existing Room</span>
+        </div>
+
+        <div className="join-group">
+          <input
+            placeholder="Enter Room Code (e.g. ABCD)"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            className="lobby-input code-input"
+          />
+          <button onClick={joinRoom} className="btn-secondary">
+            Join Room
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

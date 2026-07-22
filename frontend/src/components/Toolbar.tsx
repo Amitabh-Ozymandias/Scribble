@@ -8,11 +8,16 @@ type ToolbarProps = {
 
 const COLORS = [
   "#000000",
+  "#ffffff",
+  "#797979",
   "#ff0000",
-  "#0066ff",
-  "#00aa00",
+  "#ff7800",
   "#ffff00",
+  "#00aa00",
+  "#0066ff",
+  "#aa00ff",
   "#ff00ff",
+  "#8b4513",
 ];
 
 export default function Toolbar({
@@ -23,51 +28,34 @@ export default function Toolbar({
   clearCanvas,
 }: ToolbarProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 20,
-        alignItems: "center",
-        padding: 10,
-        borderTop: "1px solid #ccc",
-      }}
-    >
-      <div style={{ display: "flex", gap: 10 }}>
+    <div className="toolbar-card">
+      <div className="color-swatches">
         {COLORS.map((c) => (
           <button
             key={c}
             onClick={() => setColor(c)}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: c,
-              border:
-                color === c
-                  ? "3px solid #444"
-                  : "1px solid #ccc",
-              cursor: "pointer",
-            }}
+            className={`color-swatch ${color === c ? "active" : ""}`}
+            style={{ backgroundColor: c }}
+            title={c === "#ffffff" ? "Eraser / White" : c}
           />
         ))}
       </div>
 
-      <div>
-        Brush:
+      <div className="brush-slider-group">
+        <span className="slider-label">Brush:</span>
         <input
           type="range"
           min={2}
-          max={20}
+          max={30}
           value={brushSize}
-          onChange={(e) =>
-            setBrushSize(Number(e.target.value))
-          }
+          onChange={(e) => setBrushSize(Number(e.target.value))}
+          className="brush-range"
         />
-        {brushSize}px
+        <span className="brush-size-text">{brushSize}px</span>
       </div>
 
-      <button onClick={clearCanvas}>
-        Clear
+      <button onClick={clearCanvas} className="clear-btn">
+        🗑️ Clear Canvas
       </button>
     </div>
   );

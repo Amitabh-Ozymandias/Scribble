@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
-import type { Stroke } from "../types/stroke";
-import type { RoomType } from "../App";
+import type { Stroke, RoomType } from "../types";
 import Toolbar from "./Toolbar";
 
 type CanvasProps = {
@@ -10,28 +9,21 @@ type CanvasProps = {
 
 export default function Canvas({ room }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   const isDrawing = useRef(false);
-
-  const lastPoint = useRef({
-    x: 0,
-    y: 0,
-  });
+  const lastPoint = useRef({ x: 0, y: 0 });
 
   const [color, setColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
-  const canDraw = socket.id === room.drawerId;
+  const canDraw = socket.id === room.drawerId && !!room.currentWord;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-
     if (!canvas) return;
 
     canvas.width = 800;
     canvas.height = 500;
 
     const ctx = canvas.getContext("2d");
-
     if (!ctx) return;
 
     ctx.lineCap = "round";
@@ -41,11 +33,9 @@ export default function Canvas({ room }: CanvasProps) {
   useEffect(() => {
     function handleRemoteDraw(stroke: Stroke) {
       const canvas = canvasRef.current;
-
       if (!canvas) return;
 
       const ctx = canvas.getContext("2d");
-
       if (!ctx) return;
 
       ctx.beginPath();
@@ -58,11 +48,9 @@ export default function Canvas({ room }: CanvasProps) {
 
     function clearCanvasLocal() {
       const canvas = canvasRef.current;
-
       if (!canvas) return;
 
       const ctx = canvas.getContext("2d");
-
       if (!ctx) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -77,39 +65,32 @@ export default function Canvas({ room }: CanvasProps) {
     };
   }, []);
 
-  function getPosition(
-    e: React.PointerEvent<HTMLCanvasElement>
-  ) {
+  function getPosition(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
+    const scaleX = e.currentTarget.width / rect.width;
+    const scaleY = e.currentTarget.height / rect.height;
 
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     };
   }
 
-  function handlePointerDown(
-    e: React.PointerEvent<HTMLCanvasElement>
-  ) {
+  function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!canDraw) return;
     const pos = getPosition(e);
 
     isDrawing.current = true;
-
     lastPoint.current = pos;
   }
 
-  function handlePointerMove(
-    e: React.PointerEvent<HTMLCanvasElement>
-  ) {
-    if (!isDrawing.current) return;
+  function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawing.current || !canDraw) return;
 
     const canvas = canvasRef.current;
-
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
-
     if (!ctx) return;
 
     const current = getPosition(e);
@@ -132,7 +113,6 @@ export default function Canvas({ room }: CanvasProps) {
     };
 
     socket.emit("draw", stroke);
-
     lastPoint.current = current;
   }
 
@@ -141,33 +121,44 @@ export default function Canvas({ room }: CanvasProps) {
   }
 
   function clearCanvas() {
+    if (!canDraw) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     socket.emit("clear-canvas");
   }
 
   return (
-    <>
+    <div className="canvas-wrapper">
       {canDraw && (
         <Toolbar
-            color={color}
-            setColor={setColor}
-            brushSize={brushSize}
-            setBrushSize={setBrushSize}
-            clearCanvas={clearCanvas}
+          color={color}
+          setColor={setColor}
+          brushSize={brushSize}
+          setBrushSize={setBrushSize}
+          clearCanvas={clearCanvas}
         />
-    )}
+      )}
 
-      <canvas
-        ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={stopDrawing}
-        onPointerLeave={stopDrawing}
-        style={{
-          border: "2px solid black",
-          background: "white",
-          cursor: canDraw ? "crosshair" : "not-allowed",
-        }}
-      />
-    </>
+      <div className="canvas-container">
+        <canvas
+          ref={canvasRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={stopDrawing}
+          onPointerLeave={stopDrawing}
+          className={`game-canvas ${canDraw ? "drawable" : "readonly"}`}
+        />
+        {!canDraw && !room.currentWord && (
+          <div className="canvas-status-overlay">
+            Wait for the drawer to select a word...
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
