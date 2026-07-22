@@ -130,6 +130,7 @@ input:focus {
   text-align: center;
   background: linear-gradient(135deg, #a855f7, #ec4899, #6366f1);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
