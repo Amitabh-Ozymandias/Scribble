@@ -39,3 +39,9 @@ export type LeaderboardEntry = {
   name: string;
   score: number;
 };
+
+export type AuthUser = {
+  email: string;
+  name: string;
+  token: string;
+};
