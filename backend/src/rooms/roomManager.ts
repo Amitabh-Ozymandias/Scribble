@@ -80,6 +80,13 @@ export function roomExists(roomId: string): boolean {
   return rooms.has(roomId);
 }
 
+export const MAX_PLAYERS = 7;
+
+export function isRoomFull(roomId: string): boolean {
+  const room = rooms.get(roomId);
+  return room ? room.players.length >= MAX_PLAYERS : false;
+}
+
 // ==========================
 // PLAYER MANAGEMENT
 // ==========================
@@ -94,6 +101,8 @@ export function addPlayer(
   const room = rooms.get(roomId);
 
   if (!room) return null;
+
+  if (room.players.length >= MAX_PLAYERS) return null;
 
   const alreadyJoined = room.players.some(
     (p) => p.id === player.id

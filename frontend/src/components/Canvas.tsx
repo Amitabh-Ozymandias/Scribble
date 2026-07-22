@@ -13,8 +13,11 @@ export default function Canvas({ room }: CanvasProps) {
   const lastPoint = useRef({ x: 0, y: 0 });
 
   const [color, setColor] = useState("#000000");
-  const [brushSize, setBrushSize] = useState(4);
+  const [brushSize, setBrushSize] = useState(6);
+  const [isEraser, setIsEraser] = useState(false);
+
   const canDraw = socket.id === room.drawerId && !!room.currentWord;
+  const activeColor = isEraser ? "#ffffff" : color;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,6 +41,8 @@ export default function Canvas({ room }: CanvasProps) {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(stroke.x0, stroke.y0);
       ctx.lineTo(stroke.x1, stroke.y1);
@@ -78,8 +83,9 @@ export default function Canvas({ room }: CanvasProps) {
 
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!canDraw) return;
-    const pos = getPosition(e);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
+    const pos = getPosition(e);
     isDrawing.current = true;
     lastPoint.current = pos;
   }
@@ -95,7 +101,9 @@ export default function Canvas({ room }: CanvasProps) {
 
     const current = getPosition(e);
 
-    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = activeColor;
     ctx.lineWidth = brushSize;
 
     ctx.beginPath();
@@ -108,7 +116,7 @@ export default function Canvas({ room }: CanvasProps) {
       y0: lastPoint.current.y,
       x1: current.x,
       y1: current.y,
-      color,
+      color: activeColor,
       width: brushSize,
     };
 
@@ -116,8 +124,15 @@ export default function Canvas({ room }: CanvasProps) {
     lastPoint.current = current;
   }
 
-  function stopDrawing() {
-    isDrawing.current = false;
+  function stopDrawing(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (isDrawing.current) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // pointer capture already released
+      }
+      isDrawing.current = false;
+    }
   }
 
   function clearCanvas() {
@@ -140,6 +155,8 @@ export default function Canvas({ room }: CanvasProps) {
           setColor={setColor}
           brushSize={brushSize}
           setBrushSize={setBrushSize}
+          isEraser={isEraser}
+          setIsEraser={setIsEraser}
           clearCanvas={clearCanvas}
         />
       )}
@@ -150,7 +167,7 @@ export default function Canvas({ room }: CanvasProps) {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={stopDrawing}
-          onPointerLeave={stopDrawing}
+          onPointerCancel={stopDrawing}
           className={`game-canvas ${canDraw ? "drawable" : "readonly"}`}
         />
         {!canDraw && !room.currentWord && (

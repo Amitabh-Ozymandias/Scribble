@@ -7,6 +7,7 @@ import {
   createRoom,
   addPlayer,
   roomExists,
+  isRoomFull,
   removePlayer,
   getRoom,
   getRoomByPlayer,
@@ -157,6 +158,11 @@ export function initializeSocket(server: HttpServer) {
       }) => {
         if (!roomExists(roomId)) {
           socket.emit("room-error", "Room does not exist");
+          return;
+        }
+
+        if (isRoomFull(roomId)) {
+          socket.emit("room-error", "Room is full (max 7 players allowed).");
           return;
         }
 

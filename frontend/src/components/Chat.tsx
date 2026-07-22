@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
 import type { ChatMessage } from "../types";
 
+import { playCorrectGuess } from "../utils/soundEffects";
+
 type Props = {
   isDrawer?: boolean;
   isGameActive?: boolean;
@@ -15,6 +17,9 @@ export default function Chat({ isDrawer, isGameActive }: Props) {
   useEffect(() => {
     function handleMessage(chat: ChatMessage) {
       setMessages((prev) => [...prev, chat]);
+      if (chat.isCorrectGuess) {
+        playCorrectGuess();
+      }
     }
 
     socket.on("chat-message", handleMessage);

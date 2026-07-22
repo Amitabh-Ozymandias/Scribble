@@ -8,6 +8,16 @@ import Players from "./Players";
 import Timer from "./Timer";
 import WordDisplay from "./WordDisplay";
 import WordSelection from "./WordSelection";
+import Scoreboard from "./Scoreboard";
+
+import {
+  playTurnEnd,
+  playWordSelect,
+  playGameWin,
+  playTimerTick,
+  toggleMute,
+  getIsMuted,
+} from "../utils/soundEffects";
 
 type Props = {
   room: RoomType;
@@ -24,10 +34,16 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
   const [time, setTime] = useState(room.timer || 60);
   const [revealedWord, setRevealedWord] = useState("");
   const [isIntermission, setIsIntermission] = useState(false);
+  const [muted, setMuted] = useState(getIsMuted());
+
+  useEffect(() => {
+    if (leaderboard && leaderboard.length > 0) {
+      playGameWin();
+    }
+  }, [leaderboard]);
 
   useEffect(() => {
     socket.on("choose-word", (words: string[]) => {
-      console.log("Received word choices:", words);
       setWordChoices(words);
     });
 
@@ -40,10 +56,14 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
     socket.on("your-word", (word: string) => {
       setMyWord(word);
       setWordChoices([]);
+      playWordSelect();
     });
 
     socket.on("timer", (timeLeft: number) => {
       setTime(timeLeft);
+      if (timeLeft <= 10 && timeLeft > 0) {
+        playTimerTick();
+      }
     });
 
     socket.on("round-ended", ({ word }: { word: string }) => {
@@ -52,6 +72,7 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
       setMyWord("");
       setWordLength(0);
       setWordChoices([]);
+      playTurnEnd();
     });
 
     return () => {
@@ -62,6 +83,11 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
       socket.off("round-ended");
     };
   }, []);
+
+  function handleToggleMute() {
+    const isMutedNow = toggleMute();
+    setMuted(isMutedNow);
+  }
 
   function selectWord(word: string) {
     socket.emit("word-selected", word);
@@ -86,7 +112,16 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
           </span>
         </div>
 
-        <Timer time={time} />
+        <div className="header-actions">
+          <Timer time={time} />
+          <button
+            onClick={handleToggleMute}
+            className="sound-toggle-btn"
+            title={muted ? "Unmute Sound Effects" : "Mute Sound Effects"}
+          >
+            {muted ? "🔇 Sound Off" : "🔊 Sound On"}
+          </button>
+        </div>
       </header>
 
       {/* Intermission Banner */}
@@ -130,28 +165,12 @@ export default function Game({ room, leaderboard, onReturnToLobby }: Props) {
         </aside>
       </div>
 
-      {/* Game Over Modal */}
+      {/* Dedicated Game Over Scoreboard Overlay */}
       {leaderboard && (
-        <div className="modal-overlay">
-          <div className="game-over-modal">
-            <h2>🏆 Game Over!</h2>
-            <div className="podium-list">
-              {leaderboard.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className={`podium-item place-${index + 1}`}
-                >
-                  <span className="rank">{index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}</span>
-                  <span className="name">{entry.name}</span>
-                  <span className="score">{entry.score} pts</span>
-                </div>
-              ))}
-            </div>
-            <button className="btn-primary" onClick={onReturnToLobby}>
-              Back to Room
-            </button>
-          </div>
-        </div>
+        <Scoreboard
+          leaderboard={leaderboard}
+          onReturnToLobby={onReturnToLobby}
+        />
       )}
     </div>
   );

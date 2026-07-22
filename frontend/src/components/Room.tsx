@@ -7,7 +7,8 @@ type Props = {
 };
 
 export default function Room({ room }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const isHost = socket.id === room.hostId;
 
   const leaveRoom = () => {
@@ -20,8 +21,15 @@ export default function Room({ room }: Props) {
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const copyInviteLink = () => {
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${room.id}`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
@@ -33,14 +41,24 @@ export default function Room({ room }: Props) {
           <span className="code-label">Room Code:</span>
           <div className="code-box">
             <span className="code-text">{room.id}</span>
-            <button onClick={copyRoomCode} className="copy-btn">
-              {copied ? "✓ Copied!" : "📋 Copy"}
-            </button>
+            <div className="copy-btn-group">
+              <button onClick={copyRoomCode} className="copy-btn">
+                {copiedCode ? "✓ Code Copied!" : "📋 Copy Code"}
+              </button>
+              <button onClick={copyInviteLink} className="copy-btn link-btn">
+                {copiedLink ? "✓ Link Copied!" : "🔗 Copy Link"}
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="room-players-section">
-          <h3>Players Joined ({room.players.length})</h3>
+          <div className="players-header-flex">
+            <h3>Players Joined</h3>
+            <span className="capacity-badge">
+              {room.players.length} / 7 Players
+            </span>
+          </div>
 
           <div className="lobby-players-grid">
             {room.players.map((player) => (
@@ -62,7 +80,7 @@ export default function Room({ room }: Props) {
 
         <div className="room-actions">
           <button onClick={leaveRoom} className="btn-secondary">
-            Leave Room
+            🚪 Leave Room
           </button>
 
           {isHost ? (
